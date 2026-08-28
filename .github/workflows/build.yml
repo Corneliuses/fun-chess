@@ -55,3 +55,50 @@ jobs:
           path: dist/
           retention-days: 14
           if-no-files-found: error
+
+  version:
+    name: Version bumped
+    runs-on: ubuntu-latest
+    # Only meaningful on a pull request, where there is a base to compare to.
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Compare the version against the base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+
+          # Escape hatch: label a PR `no-release` when it genuinely ships no
+          # user-visible change (a typo in a comment, a CI tweak).
+          case ",${PR_LABELS}," in
+            *,no-release,*)
+              echo "PR is labelled 'no-release' — skipping the version check."
+              exit 0
+              ;;
+          esac
+
+          git fetch --no-tags --depth=1 origin "$BASE_REF"
+          base=$(git show "FETCH_HEAD:package.json" | jq -r .version)
+          head=$(jq -r .version package.json)
+          echo "base ($BASE_REF): $base"
+          echo "this PR:          $head"
+
+          if [ "$head" = "$base" ]; then
+            echo "::error file=package.json::Version is still $head. Bump it before merging: npm version <major|minor|patch> --no-git-tag-version, then add a CHANGELOG.md entry. If this PR ships no user-visible change, label it 'no-release'."
+            exit 1
+          fi
+
+          # `sort -V` compares version numbers properly, so 1.10.0 counts as
+          # newer than 1.9.0 (plain string comparison gets that backwards).
+          newest=$(printf '%s\n%s\n' "$base" "$head" | sort -V | tail -1)
+          if [ "$newest" != "$head" ]; then
+            echo "::error file=package.json::Version went backwards, $base -> $head. The new version must be higher than the base branch."
+            exit 1
+          fi
+
+          echo "Version bumped: $base -> $head"

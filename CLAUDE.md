@@ -30,7 +30,7 @@ Use `AskUserQuestion` and offer exactly three choices:
 - **major** — a breaking change; how the app works changes in a way that isn't
   backward compatible (1.0.0 → 2.0.0)
 - **minor** — a new feature, with everything existing still working (1.0.0 → 1.1.0)
-- **fix** — a bug fix only, nothing new (1.0.0 → 1.0.1); this is semver's "patch"
+- **patch** — a bug fix only, nothing new (1.0.0 → 1.0.1)
 
 Do not guess the answer, and do not skip the question because a change looks
 small. Ask, then apply the answer before the PR is opened.
@@ -44,8 +44,11 @@ inconsistent:
    (version, date, and `### Added` / `### Fixed` sections)
 3. The git tag `vX.Y.Z`, created after merge on the release commit
 
-Note the CLI takes `patch`, while the developer-facing word here is **fix**.
-They mean the same thing.
+This is enforced. The `Version bumped` CI job fails any pull request whose
+`package.json` version still matches the base branch, or whose version moved
+backwards. A PR that genuinely ships no user-visible change (a comment typo, a
+CI tweak) can carry the `no-release` label to skip the check — use it sparingly,
+and never to avoid asking the question.
 
 Tag pushes may be rejected in sandboxed environments even when branch pushes
 succeed. If `git push origin vX.Y.Z` fails, say so plainly rather than
