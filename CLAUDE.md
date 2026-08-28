@@ -79,8 +79,9 @@ errors in `try/catch`, so there is no console error, and players and game
 history just quietly stop persisting. `get` must keep returning `{ value }` (or
 null), not a bare string, because the component reads `r.value`.
 
-State is per-browser and per-device by design. Anything that needs to sync
-across devices requires a real backend and is a much larger change.
+State is per-browser and per-device today. Clearing site data wipes it, and
+nothing syncs between the tablet and the laptop. That is what v2 changes — see
+"Planned for v2" below.
 
 ### Captured pieces are scored by inversion
 
@@ -108,6 +109,32 @@ filename, so expect a large delete-plus-add diff.
 If AWS Amplify is building from `main`, it uses its own build from source and
 ignores the tracked `dist/` entirely, at which point these files are dead weight
 and should be removed from git.
+
+## Planned for v2: a database
+
+v2 will move persistence out of the browser and into a real database, so that
+players, game history and earned stickers survive across devices instead of
+living in one browser's `localStorage`. The point is that the family's stats
+accumulate over time rather than being lost when a browser is cleared or a game
+is played on a different device.
+
+This is not built yet. Do not start on it unless asked. The section exists so
+that work landing before v2 does not paint it into a corner:
+
+- **`src/storage-shim.js` is the seam.** Persistence is already isolated behind
+  `window.storage.get` / `.set`, so v2 should replace the shim's implementation
+  and leave the call sites in `PawnParty.jsx` alone. Route any new persistence
+  through that interface rather than reaching for `localStorage` directly.
+- **The interface is already async.** `get` and `set` return promises and the
+  component awaits them, so swapping a local store for a network-backed one does
+  not change how the component is written.
+- **Player identity has to become real.** A player is currently
+  `{ id: Date.now(), name, avatar }`, generated on whichever device added them.
+  Stats that follow a person across devices need a stable identifier, so expect
+  that shape to change and avoid persisting anything else keyed on `Date.now()`.
+- **A database means a server**, which the app does not have today. It also
+  turns a purely static deploy into one with a backend, so it affects the
+  Amplify setup described under Deployment.
 
 ## Deployment
 

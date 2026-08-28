@@ -9,6 +9,13 @@ look like MAJOR.MINOR.PATCH.
 - **MINOR** (1.0.0 → 1.1.0) — a new feature, but everything old still works.
 - **MAJOR** (1.0.0 → 2.0.0) — a big change that breaks how things used to work.
 
+## [1.0.1] - 2026-08-28
+
+### Changed
+- Wrote down the plan for v2: moving saved stats out of the browser and into a
+  real database, so players, games and stickers stick around across devices
+  instead of living in one browser. Notes only — nothing in the app changed yet.
+
 ## [1.0.0] - 2026-08-28
 
 The first real version. 🎉
