@@ -42,7 +42,8 @@ inconsistent:
    `package.json` and `package-lock.json`
 2. A new entry at the top of `CHANGELOG.md`, matching the existing format
    (version, date, and `### Added` / `### Fixed` sections)
-3. The git tag `vX.Y.Z`, created after merge on the release commit
+3. The git tag `vX.Y.Z` — created automatically by the `Tag the release`
+   CI job once the bump lands on `main`. Do not create or push it by hand.
 
 This is enforced. The `Version bumped` CI job fails any pull request whose
 `package.json` version still matches the base branch, or whose version moved
@@ -50,10 +51,13 @@ backwards. A PR that genuinely ships no user-visible change (a comment typo, a
 CI tweak) can carry the `no-release` label to skip the check — use it sparingly,
 and never to avoid asking the question.
 
-Tag pushes may be rejected in sandboxed environments even when branch pushes
-succeed. If `git push origin vX.Y.Z` fails, say so plainly rather than
-reporting the release as complete, and tell the developer to create the tag
-via the GitHub Releases UI.
+Do not try to push a tag from an agent session — it will fail. The GitHub
+credentials available to Claude Code on the web can create and update branches,
+but cannot push tags or delete branches; `git push origin vX.Y.Z` returns 403
+from GitHub for every tag name, annotated or lightweight. CI holds a different
+token and does the tagging instead, so the tag appears shortly after the merge.
+If it does not, read the `Tag the release` job's log rather than reaching for a
+manual push.
 
 ## Architecture
 

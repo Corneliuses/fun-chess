@@ -102,3 +102,39 @@ jobs:
           fi
 
           echo "Version bumped: $base -> $head"
+
+  tag:
+    name: Tag the release
+    runs-on: ubuntu-latest
+    # Only on main, and only once the build is known good — never tag a broken
+    # commit. Skipped on pull requests.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    # Overrides the workflow-wide read-only default; creating a tag is a write.
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Create the version tag if it does not already exist
+        run: |
+          set -euo pipefail
+
+          version=$(jq -r .version package.json)
+          tag="v$version"
+
+          # Idempotent: pushes that do not bump the version must not fail here.
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "$tag already exists — nothing to do."
+            exit 0
+          fi
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "Pawn Party $tag"
+          git push origin "refs/tags/$tag"
+
+          echo "Created $tag on $(git rev-parse --short HEAD)"
+          echo "### Tagged \`$tag\` :label:" >> "$GITHUB_STEP_SUMMARY"
