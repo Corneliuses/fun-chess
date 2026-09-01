@@ -1,0 +1,42 @@
+# Build settings for AWS Amplify Hosting.
+#
+# Keeping this in the repo means the build is defined next to the code and
+# changes through review, rather than living only in the AWS console where it
+# is invisible from here.
+version: 1
+
+frontend:
+  phases:
+    preBuild:
+      commands:
+        # `npm ci` installs exactly what package-lock.json pins, so the deployed
+        # build uses the same dependency versions CI just verified.
+        - npm ci
+    build:
+      commands:
+        - npm run build
+
+  artifacts:
+    # Vite writes the site into dist/. Amplify publishes what it finds here,
+    # so this must stay in step with vite.config.js.
+    baseDirectory: dist
+    files:
+      - '**/*'
+
+  cache:
+    paths:
+      - node_modules/**/*
+
+# Vite fingerprints asset filenames (index-Wm8ljQ-T.js), so a given asset URL
+# never changes content and can be cached forever. index.html is the file that
+# points at the current fingerprint, so it must never be cached — otherwise a
+# returning visitor keeps loading the previous build's JavaScript.
+customHeaders:
+  - pattern: '/assets/**'
+    headers:
+      - key: Cache-Control
+        value: 'public, max-age=31536000, immutable'
+  - pattern: '/index.html'
+    headers:
+      - key: Cache-Control
+        value: 'public, max-age=0, must-revalidate'
